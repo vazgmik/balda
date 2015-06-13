@@ -13,6 +13,8 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        baldawindow.cpp
+        baldawindow.cpp \
+    baldaboard.cpp
 
-HEADERS  += baldawindow.h
+HEADERS  += baldawindow.h \
+    baldaboard.h
