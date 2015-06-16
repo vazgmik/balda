@@ -9,46 +9,59 @@
 QT_BEGIN_NAMESPACE
 class QGridLayout;
 class QButtonGroup;
+class QAbstractButton;
 QT_END_NAMESPACE
 
 
 class BaldaBoard: public QFrame
 {
     Q_OBJECT
+
 public:
     BaldaBoard(QWidget *parent = 0);
     bool IsFree(int);
-    bool MakeStep(int, QString);
-    int XYtoID(int , int  );
+    bool MakeStep(int);
+    int XYtoID(int,int);
     void LoadDictionary();
     void SetPlayWord();
     void ClearBoard();
+    void SelectCell(int);
+    void EditMode();
+    void NormalMode();
 public slots:
     void onboard(int);
     void curletter(QString);
     void start();
     void pause();
+    void apply();
     void timeOutSlot();
+
 signals:
     void pl_scoreChanged(int score);
     void comp_scoreChanged(int score);
     void timeChanged(QString);
+    void pl_addWord(QString);
+
 private:
-    QVector<QString> play_word;
+    QVector<QString> play_words;
+    QString player_word;
     QVector<QString> dict;
-    int cur_pos;
     QString letter;
     QTimer timer;
+    QTime time;
     QButtonGroup * board;
     bool isStarted;
     bool isPaused;
     bool isPlayer;
     bool addLetter;
-    QTime time;
     int pl_score;
     int comp_score;
+    int cur_pos;
+    int prev_pos;
     int row_size;
     int col_size;
-    bool isChosed;
+
+    QVector <QAbstractButton*> player;
+
 };
 #endif // BALDABOARD_H

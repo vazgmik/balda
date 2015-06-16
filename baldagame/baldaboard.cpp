@@ -4,7 +4,7 @@
 
 
 BaldaBoard::BaldaBoard(QWidget *parent)
-    :QFrame(parent),cur_pos(0),row_size(5),col_size(5)
+    :QFrame(parent),cur_pos(-1),prev_pos(-1),row_size(5),col_size(5)
 {
     setFrameStyle(QFrame::Panel | QFrame::Sunken);
     setFocusPolicy(Qt::StrongFocus);
@@ -12,6 +12,7 @@ BaldaBoard::BaldaBoard(QWidget *parent)
     QGridLayout *l_board = new QGridLayout(this);
     board = new QButtonGroup;
     letter = "A";
+    player_word ="";
     isStarted = false;
     isPaused = false;
     addLetter = false;
@@ -46,19 +47,48 @@ bool BaldaBoard::IsFree(int id)
     return false;
 }
 
-bool BaldaBoard::MakeStep(int id, QString ch)
+bool BaldaBoard::MakeStep(int id)
 {
-    static QString word="";
-    if(IsFree(id))
+    if(player.contains(board->button(id)))
     {
-        if( cur_pos+1 == id || cur_pos-1 == id || cur_pos+col_size == id ||cur_pos-col_size == id)
+        foreach (QAbstractButton *but, player) {
+            but->setChecked(true);
+        }
+        int size = player.size();
+        if(board->button(id) == player[size-1])
         {
-            word += ch;
-            cur_pos = id;
-            return true;
+            if(size==1)
+            {
+                board->button(id)->setText("");
+                NormalMode();
+                addLetter = false;
+                isPlayer = false;
+            }
+            player_word.remove(player_word.size()-1,1);
+            board->button(id)->setStyleSheet("QPushButton {font-size: 18pt;font-weight: bold;}");
+            player.pop_back();
+
+            cur_pos = prev_pos;
+//            QMessageBox msgBox;
+//            msgBox.setText(player_word);
+//            msgBox.exec();
         }
 
     }
+    else if(cur_pos+1 == id || cur_pos-1 == id || cur_pos+col_size == id ||cur_pos-col_size == id || cur_pos == -1)
+    {
+        player.push_back(board->button(id));
+        prev_pos = cur_pos;
+        player_word  += board->button(id)->text();
+
+//        QMessageBox msgBox;
+//        msgBox.setText(player_word);
+//        msgBox.exec();
+
+        cur_pos = id;
+        return true;
+    }
+
     return false;
 }
 
@@ -89,15 +119,15 @@ void BaldaBoard::SetPlayWord()
 
     foreach(QString str ,dict)
     {
-        if(str.size() == col_size && !play_word.contains(str))
+        if(str.size() == col_size && !play_words.contains(str))
         {
-            play_word << str;
+            play_words << str;
             break;
         }
     }
 
     for(int i=0;i<col_size;++i)
-        board->button(XYtoID(row_size/2,i))->setText(QString(play_word[play_word.size()-1][i]));
+        board->button(XYtoID(row_size/2,i))->setText(QString(play_words[play_words.size()-1][i]));
 }
 
 void BaldaBoard::ClearBoard()
@@ -105,13 +135,44 @@ void BaldaBoard::ClearBoard()
 
 }
 
+void BaldaBoard::SelectCell(int id)
+{
+    if(IsFree(id))
+    {
+        board->button(id)->setText(letter);
+        board->button(id)->setChecked(false);
+        addLetter = true;
+    }
+}
+
+void BaldaBoard::EditMode()
+{
+    foreach(QAbstractButton *but,board->buttons())
+    {
+        if(but->text()=="")
+            but->setEnabled(false);
+    }
+}
+
+void BaldaBoard::NormalMode()
+{
+    foreach(QAbstractButton *but,board->buttons())
+    {
+        but->setEnabled(true);
+        but->setChecked(false);
+        QString style = "QPushButton {font-size: 18pt;font-weight: bold;} ";
+        but->setStyleSheet(style);
+    }
+}
+
 
 void BaldaBoard::timeOutSlot()
 {
     time.setHMS(0,time.addSecs(-1).minute(),time.addSecs(-1).second()); // decrement counter
     emit timeChanged(time.toString());
-    if (time.second() ==0 &&time.minute() == 0 ) // countdown has finished
+    if (time.second() ==0 && time.minute() == 0 ) // countdown has finished
     {
+        //gameover
        timer.stop();
     }
 
@@ -125,18 +186,23 @@ void BaldaBoard::onboard(int id)
     {
         if(!addLetter)
         {
-            if(!cur_pos)
-            {
-                board->button(id)->setText(letter);
-                cur_pos = id;
-                addLetter = true;
-            }
-
+            SelectCell(id);
+            EditMode();
         }
         else
         {
-
+            //edit mode
+            if(MakeStep(id))
+            {
+                 QString style = "QPushButton {font-size: 18pt;font-weight: bold;color: #ff0000;} ";
+                 board->button(id)->setStyleSheet(style);
+            }
+            else
+            {
+                board->button(id)->setChecked(false);
+            }
         }
+
 
 
     }
@@ -144,24 +210,6 @@ void BaldaBoard::onboard(int id)
     {
         //Computer turn create word
     }
-//    int cur_row = id/row_size;
-//    int cur_col = id%col_size;
-//    if(!isChosed){
-//        board->button(id)->setText(letter);
-//        isChosed = true;
-//        prev_pos = QPoint(cur_row,cur_col);
-//    }
-//    else{
-//        cur_pos = QPoint(cur_row,cur_col);
-//        if(MakeStep(cur_pos.x(),cur_pos.y(),letter)){
-//             board->button(id)->setChecked(true);
-//             prev_pos = cur_pos;
-//        }
-//        else
-//        {
-//             board->button(id)->setChecked(false);
-//        }
-//    }
 
 }
 
@@ -206,6 +254,18 @@ void BaldaBoard::pause()
         timer.start(1000);
     }
 
+}
+
+void BaldaBoard::apply()
+{
+    if(dict.contains(player_word))
+    {
+        NormalMode();
+        addLetter = false;
+        isPlayer = false;
+        emit pl_addWord(player_word);
+        emit pl_scoreChanged(player_word.size());
+    }
 }
 
 

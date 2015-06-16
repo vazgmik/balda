@@ -55,8 +55,11 @@ BaldaWindow::BaldaWindow()
     connect(startButton, SIGNAL(clicked()), board, SLOT(start()));
     connect(quitButton , SIGNAL(clicked()), qApp, SLOT(quit()));
     connect(pauseButton, SIGNAL(clicked()), board, SLOT(pause()));
+    connect(applyButton, SIGNAL(clicked()), board, SLOT(apply()));
     connect(letters,SIGNAL(currentTextChanged(QString)),board,SLOT(curletter(QString)));
     connect(board, SIGNAL(timeChanged(QString)), timeLcd, SLOT(display(QString)));
+    connect(board, SIGNAL(pl_scoreChanged(int)), pl_scoreLcd, SLOT(display(int)));
+    connect(board, SIGNAL(pl_addWord(QString)), pl_words, SLOT(appendPlainText(QString)));
 
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(createLabel(tr("Player's score")),0,0);
