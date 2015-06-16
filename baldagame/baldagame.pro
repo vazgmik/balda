@@ -14,7 +14,12 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         baldawindow.cpp \
-    baldaboard.cpp
+    baldaboard.cpp \
+    baldaword.cpp
 
 HEADERS  += baldawindow.h \
-    baldaboard.h
+    baldaboard.h \
+    baldaword.h
+
+RESOURCES += \
+    resourse.qrc
